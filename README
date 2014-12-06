@@ -1,0 +1,125 @@
+About Riddler
+-------------
+This is a small cryptographic library, implementing cryptographic signatures 
+with ed25519 (see [1]) and diffie-hellman key exchange with curve25519 (see [2]).
+
+PLEASE NOTE: I've written this code while studying the linked papers. The 
+resulting code turned out to be fairly good compared to other (pure) C
+implementations, so i decided to realease it. HOWEVER: If you are interessted 
+in ed25519 and curve25519 please check out the official code, NaCl from [3],
+first, which is the better choice for most use cases.
+
+You are still here? Ok, this is what you get:
+
+  - completely written in portable and readable C 
+  - cmake build system
+  - protection against timing attacks (see original papers for description)
+  - optimizations for 32bit and 64bit (autodetected at compile time)
+  - static and dynamic link (PIC) support
+  - public domain license
+
+Still missing is the batch verify feature for ed25519.
+ 
+
+[1] http://ed25519.cr.yp.to/ed25519-20110705.pdf
+[2] http://cr.yp.to/ecdh/curve25519-20060209.pdf
+[3] http://nacl.cr.yp.to
+
+
+
+Build & Install
+---------------
+First the source must be configured with cmake, from the source directory use:
+
+  mkdir build
+  cd build
+  cmake ..
+
+if you want to use options (see below), add -D with the wished option to the cmake
+command here.
+
+now compile with
+  make
+
+and, if wished, install (as root) with
+  make install
+
+
+cmake options
+--------------
+  USE_STACKCLEAN	cleanup stack after job is done (default: on)
+  BUILD_STATIC 		build static library as well (default: on)
+  BUILD_TESTING		build selftests, run these with ctest (default: off)
+
+
+
+Howto use this library
+----------------------
+This library is very simple to use, but you are expected to know how
+the signing with DSA and key-exchange with Diffie-Hellman works.
+
+  signatures with eddsa (ed25519)
+  -------------------------------
+
+  #include <riddler.h>
+
+  void eddsa_genpub(uint8_t pub[32], const uint8_t sec[32]);
+  void eddsa_sign(uint8_t sig[64], const uint8_t sec[32],
+		  const uint8_t pub[32], const uint8_t *data, size_t len);
+  int  eddsa_verify(const uint8_t sig[64], const uint8_t pub[32],
+		    const uint8_t *data, size_t len);
+
+
+  Secret- and public-key are both 32 bytes long. To generate a secret key
+  just fill it with high quality random data. The public key is than derived
+  from it by calling eddsa_genpub.
+
+  To sign data use eddsa_sign to generate a 64 byte long signature.
+
+  Verify a signature by calling eddsa_verify: It returns 0 if the signature is
+  ok and -1 otherwise.
+
+
+  diffie-hellman (curve25519)
+  ---------------------------
+
+  #include <riddler.h>
+
+  void DH(uint8_t out[32], const uint8_t sec[32], const uint8_t base[32]);
+
+  The common basepoint is
+
+  uint8_t bp[32] = { 9 };
+
+  Alice and Bob both generate 32 byte secrets, secA and secB, with high
+  quality random data.
+
+  Alice uses:
+    DH(encA, secA, bp)
+    <send encA to Bob>
+    <receive encB from Bob>
+    DH(ss, secA, encB);
+
+  Bob:
+    DH(encB, secB, bp);
+    <send encB to Alice>
+    <receive encA from Alice>
+    DH(ss, secB, encA);
+
+  Now both possess the same shared secret ss, which could be used for a symmetric
+  cipher.
+
+
+  using as shared library
+  -----------------------
+  If the library is correctly installed, all you need is adding
+  '-lriddler' to your linker command line. For example:
+
+  cc -o foo foo.c -lriddler
+
+
+  using static library
+  --------------------
+  If you use the static version of libriddler, please make sure to compile
+  your source with -DRIDDLER_STATIC. This is especially important for
+  windows users.

@@ -1,0 +1,61 @@
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(RIDDLER_SRC fld.c sc.c ed.c sha512.c eddsa.c dh.c sha256.c)
+if (BITNESS EQUAL 64)
+  list(APPEND RIDDLER_SRC fld64.c)
+else ()
+  list(APPEND RIDDLER_SRC fld32.c)
+endif ()
+
+if (USE_STACKCLEAN)
+  list(APPEND RIDDLER_SRC burn.c burnstack.c)
+endif ()
+
+
+
+add_library(riddler SHARED ${RIDDLER_SRC})
+
+
+if (BITNESS EQUAL 64)
+  set_property(TARGET riddler APPEND PROPERTY COMPILE_DEFINITIONS USE_64BIT)
+endif ()
+
+if (USE_STACKCLEAN)
+  set_property(TARGET riddler APPEND PROPERTY COMPILE_DEFINITIONS USE_STACKCLEAN)
+endif ()
+
+set_property(TARGET riddler APPEND PROPERTY COMPILE_DEFINITIONS RIDDLER_BUILD)
+
+
+# do we have gnu-c style visibility?
+#
+if (HAVE_VISIBILITY)
+  set_property(TARGET riddler APPEND PROPERTY COMPILE_DEFINITIONS HAVE_VISIBILITY)
+  set_property(TARGET riddler PROPERTY COMPILE_FLAGS "-fvisibility=hidden")
+endif ()
+
+
+set_property(TARGET riddler PROPERTY VERSION ${RIDDLER_VERSION_MAJOR}.${RIDDLER_VERSION_MINOR})
+set_property(TARGET riddler PROPERTY SOVERSION ${RIDDLER_VERSION_MAJOR})
+set_property(TARGET riddler PROPERTY MACOSX_RPATH TRUE)
+install(TARGETS riddler DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+
+install(FILES riddler.h DESTINATION include)
+
+
+if (BUILD_STATIC)
+  add_library(riddler-static STATIC ${RIDDLER_SRC})
+
+  if (BITNESS EQUAL 64)
+    set_property(TARGET riddler-static APPEND PROPERTY COMPILE_DEFINITIONS USE_64BIT)
+  endif ()
+
+  if (USE_STACKCLEAN)
+    set_property(TARGET riddler-static APPEND PROPERTY COMPILE_DEFINITIONS USE_STACKCLEAN)
+  endif ()
+
+  set_property(TARGET riddler-static APPEND PROPERTY COMPILE_DEFINITIONS RIDDLER_BUILD RIDDLER_STATIC)
+  set_property(TARGET riddler-static APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS RIDDLER_STATIC)
+
+  install(TARGETS riddler-static DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+endif ()
