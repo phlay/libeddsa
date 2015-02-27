@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 2.8)
 project(riddler C)
 
 set(RIDDLER_VERSION_MAJOR 0)
-set(RIDDLER_VERSION_MINOR 0)
+set(RIDDLER_VERSION_MINOR 1)
 
 
 option(USE_STACKCLEAN "clean all secret variables from stack" ON)
@@ -14,7 +14,7 @@ option(BUILD_TESTING "build test" OFF)
 
 
 if (UNIX)
-  set(CMAKE_C_FLAGS "-std=c99 -Wall -pedantic -O3")
+	set(CMAKE_C_FLAGS "-std=c99 -fwrapv -Wall -pedantic -O3")
 endif ()
 
 
