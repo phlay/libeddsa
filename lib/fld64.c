@@ -16,6 +16,7 @@
 #else
 
 
+
 /*
  * exported field constants
  */
@@ -35,75 +36,98 @@ const fld_t con_m2d = {
 	391889346694804, 1319068373426821, 1179480697372589, 435901477914248,
 	1618010317689344 };
 
-/* j^2 = 1 (mod q) */
+/* con_j^2 = 1 (mod q) */
 const fld_t con_j = {
 	1718705420411056, 234908883556509, 2233514472574048, 2117202627021982,
 	765476049583133 };
 
 
 
-
 /*
- * fld_carry - do one carry-reduce round.
+ * fld_reduce - returns the smallest non-negative representation of x modulo q
+ * 		with 0 <= x[i] <= 2^51 - 1 for 0 <= i <= 4.
  *
- * after that all limbs but the first are carried. to completly reduce
- * x modulo 2^255-19 a second call may be needed.
- *
- * this function assumes
- *	x[i] <= 2^64 - 2^13 = 8192 * (2^51-1)
- * for i > 0.
- */
-static void
-fld_carry(fld_t res, const fld_t x)
-{
-	int i;
-
-	/* carry loop */
-	res[0] = x[0];
-	for (i = 1; i < FLD_LIMB_NUM; i++) {
-		res[i] = (res[i-1] >> FLD_LIMB_BITS) + x[i];
-		res[i-1] &= FLD_LIMB_MASK;
-	}
-	
-	/* reduce modulo q */
-	res[0] += 19 * (res[FLD_LIMB_NUM-1] >> FLD_LIMB_BITS);
-	res[FLD_LIMB_NUM-1] &= FLD_LIMB_MASK;
-}
-
-
-
-/*
- * fld_reduce - completely reduce x modulo q.
- *
- * This function carry-reduces two times (which is always enough) and
- * takes special precaution to correctly reduce values of x with
- * 			q <= x < 2^255.
- *
- * As with fld_carry all limbs x[i] are assumed to hold
- * 		     x[i] <= 2^13 * (2^51-1).
+ * This function assumes
+ *   abs(x[i]) <= 2^63 - 2^12 = 2^12 * (2^51 - 1), 
+ * for 0 <= i <= 4 to work properly.
  */
 void
 fld_reduce(fld_t res, const fld_t x)
 {
-	int i;
-
 	/* first carry round with offset 19 */
 	res[0] = x[0] + 19;
-	for (i = 1; i < FLD_LIMB_NUM; i++) {
-		res[i] = (res[i-1] >> FLD_LIMB_BITS) + x[i];
-		res[i-1] &= FLD_LIMB_MASK;
-	}
-	res[0] += 19*(res[FLD_LIMB_NUM-1] >> FLD_LIMB_BITS);
-	res[FLD_LIMB_NUM-1] &= FLD_LIMB_MASK;
-	
-	/* subtract 19 again */
+	res[1] = x[1] + (res[0] >> FLD_LIMB_BITS);
+	res[2] = x[2] + (res[1] >> FLD_LIMB_BITS);
+	res[3] = x[3] + (res[2] >> FLD_LIMB_BITS);
+	res[4] = x[4] + (res[3] >> FLD_LIMB_BITS);
+
+	/* -2^12 <= (res[4] >> FLD_LIMB_BITS) <= 2^12-1 */
+	res[0] = (res[0] & FLD_LIMB_MASK) + 19*(res[4] >> FLD_LIMB_BITS);
+	res[1] &= FLD_LIMB_MASK;
+	res[2] &= FLD_LIMB_MASK;
+	res[3] &= FLD_LIMB_MASK;
+	res[4] &= FLD_LIMB_MASK;
+
+	/* now we have
+	 *   -19*2^12 <= res[0] <= 2^51-1 + 19*(2^12-1),
+	 * and
+	 *   0 <= res[i] <= 2^51-1 for 1 <= i <= 4.
+	 */
+
+	/* second round */
+	res[1] += (res[0] >> FLD_LIMB_BITS);
+	res[2] += (res[1] >> FLD_LIMB_BITS);
+	res[3] += (res[2] >> FLD_LIMB_BITS);
+	res[4] += (res[3] >> FLD_LIMB_BITS);
+
+	/* -1 <= (res[4] >> FLD_LIMB_BITS) <= 1 */
+	res[0] = (res[0] & FLD_LIMB_MASK) + 19*(res[4] >> FLD_LIMB_BITS);
+	res[1] &= FLD_LIMB_MASK;
+	res[2] &= FLD_LIMB_MASK;
+	res[3] &= FLD_LIMB_MASK;
+	res[4] &= FLD_LIMB_MASK;
+
+	/* the second round yields 
+	 *   -19 <= res[0] <= 2^51-1 + 19
+	 * and
+	 *   0 <= res[i] <= 2^51-1 for 1 <= i < 5.
+	 */
 	res[0] -= 19;
 
-	/* second carry round */
-	fld_carry(res, res);
+	/* with the offset removed we have
+	 *   -38 <= res[0] <= 2^51-1
+	 * and need a third round to assure that res[0] is non-negative.
+	 *
+	 * please note, that no positive carry is possible at this point.
+	 */
+
+	res[1] += (res[0] >> FLD_LIMB_BITS);
+	res[2] += (res[1] >> FLD_LIMB_BITS);
+	res[3] += (res[2] >> FLD_LIMB_BITS);
+	res[4] += (res[3] >> FLD_LIMB_BITS);
+
+	/* -1 <= (res[4] >> FLD_LIMB_BITS) <= 0, because of non-positive carry */
+	res[0] = (res[0] & FLD_LIMB_MASK) + 19*(res[4] >> FLD_LIMB_BITS);
+
+	res[1] &= FLD_LIMB_MASK;
+	res[2] &= FLD_LIMB_MASK;
+	res[3] &= FLD_LIMB_MASK;
+	res[4] &= FLD_LIMB_MASK;
+
+
+	/* if res[0] was negative before this round we had an negative carry and
+	 * have now
+	 *   2^51 - 38 - 19 <= res[0] <= 2^51 - 1.
+	 *
+	 * so in any case it is
+	 *   0 <= res[0] <= 2^51 - 1
+	 * and
+	 *   0 <= res[i] <= 2^51 - 1 for 1 <= i < 5
+	 * as wished.
+	 *
+	 * moreover res is the smallest non-negative representant of x modulo q.
+	 */
 }
-
-
 
 /*
  * fld_import - import an 256bit, unsigned, little-endian integer into
@@ -159,16 +183,25 @@ fld_export(uint8_t dst[32], const fld_t src)
 void
 fld_scale(fld_t res, const fld_t e, limb_t s)
 {
-	int i;
-	llimb_t carry = 0;
+	llimb_t carry;
 
-	for (i = 0; i < FLD_LIMB_NUM; i++) {
-		carry = (carry >> FLD_LIMB_BITS) + (llimb_t) s * e[i];
-		res[i] = carry & FLD_LIMB_MASK;
-	}
+	carry = (llimb_t)s*e[0];
+	res[0] = carry & FLD_LIMB_MASK;
+
+	carry = (carry >> FLD_LIMB_BITS) + (llimb_t)s*e[1];
+	res[1] = carry & FLD_LIMB_MASK;
+
+	carry = (carry >> FLD_LIMB_BITS) + (llimb_t)s*e[2];
+	res[2] = carry & FLD_LIMB_MASK;
+
+	carry = (carry >> FLD_LIMB_BITS) + (llimb_t)s*e[3];
+	res[3] = carry & FLD_LIMB_MASK;
+
+	carry = (carry >> FLD_LIMB_BITS) + (llimb_t)s*e[4];
+	res[4] = carry & FLD_LIMB_MASK;
+
 	res[0] += 19*(carry >> FLD_LIMB_BITS);
 }
-
 
 /*
  * fld_mul - multiply a with b and reduce modulo q.
@@ -176,50 +209,38 @@ fld_scale(fld_t res, const fld_t e, limb_t s)
 void
 fld_mul(fld_t res, const fld_t a, const fld_t b)
 {
-	fld_t tmp;
-	llimb_t carry;
+	limb_t a19_1, a19_2, a19_3, a19_4, tmp;
+	llimb_t c[5];
 
-	carry = (llimb_t)a[0]*b[0] +
-		19*((llimb_t)a[1]*b[4] +
-		    (llimb_t)a[2]*b[3] +
-		    (llimb_t)a[3]*b[2] +
-		    (llimb_t)a[4]*b[1]);
-	tmp[0] = carry & FLD_LIMB_MASK;
+	a19_1 = 19*a[1];
+	a19_2 = 19*a[2];
+	a19_3 = 19*a[3];
+	a19_4 = 19*a[4];
 
-	carry >>= FLD_LIMB_BITS;
-	carry += (llimb_t)a[0]*b[1] + (llimb_t)a[1]*b[0] +
-		19*((llimb_t)a[2]*b[4] +
-		    (llimb_t)a[3]*b[3] +
-		    (llimb_t)a[4]*b[2]);
-	tmp[1] = carry & FLD_LIMB_MASK;
+	c[0] = (llimb_t)a[0]*b[0] + (llimb_t)a19_1*b[4] + (llimb_t)a19_2*b[3]
+		+ (llimb_t)a19_3*b[2] + (llimb_t)a19_4*b[1];
+	c[1] = (llimb_t)a[0]*b[1] + (llimb_t)a[1]*b[0] + (llimb_t)a19_2*b[4]
+		+ (llimb_t)a19_3*b[3] + (llimb_t)a19_4*b[2];
+	c[2] = (llimb_t)a[0]*b[2] + (llimb_t)a[1]*b[1] + (llimb_t)a[2]*b[0]
+		+ (llimb_t)a19_3*b[4] + (llimb_t)a19_4*b[3];
+	c[3] = (llimb_t)a[0]*b[3] + (llimb_t)a[1]*b[2] + (llimb_t)a[2]*b[1]
+		+ (llimb_t)a[3]*b[0] + (llimb_t)a19_4*b[4];
+	c[4] = (llimb_t)a[0]*b[4] + (llimb_t)a[1]*b[3] + (llimb_t)a[2]*b[2]
+		+ (llimb_t)a[3]*b[1] + (llimb_t)a[4]*b[0];
 
-	carry >>= FLD_LIMB_BITS;
-	carry += (llimb_t)a[0]*b[2] +
-		 (llimb_t)a[1]*b[1] +
-		 (llimb_t)a[2]*b[0] +
-		19*((llimb_t)a[3]*b[4] +
-		    (llimb_t)a[4]*b[3]);
-	tmp[2] = carry & FLD_LIMB_MASK;
 
-	carry >>= FLD_LIMB_BITS;
-	carry += (llimb_t)a[0]*b[3] +
-		 (llimb_t)a[1]*b[2] +
-		 (llimb_t)a[2]*b[1] +
-		 (llimb_t)a[3]*b[0] +
-		 (llimb_t)19*a[4]*b[4];
-	tmp[3] = carry & FLD_LIMB_MASK;
+	c[1] += c[0] >> FLD_LIMB_BITS;
+	c[2] += c[1] >> FLD_LIMB_BITS;
+	c[3] += c[2] >> FLD_LIMB_BITS;
+	c[4] += c[3] >> FLD_LIMB_BITS;
 
-	carry >>= FLD_LIMB_BITS;
-	carry += (llimb_t)a[0]*b[4] +
-		 (llimb_t)a[1]*b[3] +
-		 (llimb_t)a[2]*b[2] +
-		 (llimb_t)a[3]*b[1] +
-		 (llimb_t)a[4]*b[0];
-	tmp[4] = carry & FLD_LIMB_MASK;
+	tmp = (c[0] & FLD_LIMB_MASK) + 19*(c[4] >> FLD_LIMB_BITS);
+	res[1] = (c[1] & FLD_LIMB_MASK) + (tmp >> FLD_LIMB_BITS);
 
-	tmp[0] += 19*(carry >> FLD_LIMB_BITS);
-	
-	fld_carry(res, tmp);
+	res[0] = tmp & FLD_LIMB_MASK;
+	res[2] = c[2] & FLD_LIMB_MASK;
+	res[3] = c[3] & FLD_LIMB_MASK;
+	res[4] = c[4] & FLD_LIMB_MASK;
 }
 
 /*
@@ -228,35 +249,34 @@ fld_mul(fld_t res, const fld_t a, const fld_t b)
 void
 fld_sq(fld_t res, const fld_t x)
 {
-	fld_t tmp;
-	llimb_t carry;
+	limb_t x2_1, x2_2, x2_3, x2_4, x19_3, x19_4, tmp;
+	llimb_t c[5];
 
-	carry = (llimb_t)x[0]*x[0] +
-		38*((llimb_t)x[1]*x[4] + (llimb_t)x[2]*x[3]);
-	tmp[0] = carry & FLD_LIMB_MASK;
+	x2_1 = 2*x[1];
+	x2_2 = 2*x[2];
+	x2_3 = 2*x[3];
+	x2_4 = 2*x[4];
+	x19_3 = 19*x[3];
+	x19_4 = 19*x[4];
 
-	carry >>= FLD_LIMB_BITS;
-	carry += ( (llimb_t)x[0]*x[1] << 1 ) +
-		19*(((llimb_t)x[2]*x[4] << 1) + (llimb_t)x[3]*x[3]);
-	tmp[1] = carry & FLD_LIMB_MASK;
+	c[0] = (llimb_t)x[0]*x[0] + (llimb_t)x2_1*x19_4 + (llimb_t)x2_2*x19_3;
+	c[1] = (llimb_t)x[0]*x2_1 + (llimb_t)x2_2*x19_4 + (llimb_t)x19_3*x[3];
+	c[2] = (llimb_t)x[0]*x2_2 + (llimb_t)x[1]*x[1] + (llimb_t)x2_3*x19_4;
+	c[3] = (llimb_t)x[0]*x2_3 + (llimb_t)x2_1*x[2] + (llimb_t)x19_4*x[4];
+	c[4] = (llimb_t)x[0]*x2_4 + (llimb_t)x2_1*x[3] + (llimb_t)x[2]*x[2];
 
-	carry >>= FLD_LIMB_BITS;
-	carry += ( (llimb_t)x[0]*x[2] << 1 ) +
-		(llimb_t)x[1]*x[1] + (llimb_t)38*x[3]*x[4];
-	tmp[2] = carry & FLD_LIMB_MASK;
+	c[1] += c[0] >> FLD_LIMB_BITS;
+	c[2] += c[1] >> FLD_LIMB_BITS;
+	c[3] += c[2] >> FLD_LIMB_BITS;
+	c[4] += c[3] >> FLD_LIMB_BITS;
 
-	carry >>= FLD_LIMB_BITS;
-	carry += ( ((llimb_t)x[0]*x[3] + (llimb_t)x[1]*x[2]) << 1 ) +
-		(llimb_t)19*x[4]*x[4];
-	tmp[3] = carry & FLD_LIMB_MASK;
+	tmp = (c[0] & FLD_LIMB_MASK) + 19*(c[4] >> FLD_LIMB_BITS);
+	res[1] = (c[1] & FLD_LIMB_MASK) + (tmp >> FLD_LIMB_BITS);
 
-	carry >>= FLD_LIMB_BITS;
-	carry += ( ((llimb_t)x[0]*x[4] + (llimb_t)x[1]*x[3]) << 1 ) +
-		(llimb_t)x[2]*x[2];
-	tmp[4] = carry & FLD_LIMB_MASK;
-
-	tmp[0] += 19*(carry >> FLD_LIMB_BITS);
-
-	fld_carry(res, tmp);
+	res[0] = tmp & FLD_LIMB_MASK;
+	res[2] = c[2] & FLD_LIMB_MASK;
+	res[3] = c[3] & FLD_LIMB_MASK;
+	res[4] = c[4] & FLD_LIMB_MASK;
 }
+
 #endif

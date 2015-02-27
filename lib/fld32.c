@@ -41,9 +41,8 @@ const fld_t con_j = { 34513072, 25610706, 9377949, 3500415, 12389472, 33281959,
  * limb_t or llimb_t.
  *
  * off is normally zero, but could be used to wrap-around values x
- * with q <= x < 2^255 (see fld_reduce).
+ * with q <= x < 2^255 (see fld_reduce for an example).
  */
-
 #define CARRY(dst, src, tmp, off)	      				\
 do {									\
 	int _ii;							\
@@ -58,22 +57,19 @@ do {									\
 } while(0)
 
 
-
 /*
- * fld_reduce - completely reduce x modulo q.
- *
- * This function carry-reduces two times (which is always enough) and
- * takes special precaution to correctly reduce values of x with
- * q <= x < 2^255.
+ * fld_reduce - returns the smallest non-negative representation of x modulo q
+ * 		with 0 <= x[i] <= 2^26 - 1 for i % 2 == 0 
+ * 		and  0 <= x[i] <= 2^25 - 1 for i % 2 == 1.
  */
 void
 fld_reduce(fld_t res, const fld_t x)
 {
 	limb_t tmp;
 	CARRY(res, x, tmp, 19);
+	CARRY(res, res, tmp, 0);
 	CARRY(res, res, tmp, -19);
 }
-
 
 /*
  * fld_import - import an 256bit, unsigned, little-endian integer into
@@ -98,8 +94,6 @@ fld_import(fld_t dst, const uint8_t src[32])
 	}
 	dst[0] += 19*foo;
 }
-
-
 
 /*
  * fld_export - export a field element into 256bit little-endian encoded form.
@@ -198,7 +192,6 @@ fld_mul(fld_t dst, const fld_t a, const fld_t b)
 	CARRY(dst, c, tmp, 0);
 }
 
-
 /*
  * fld_sq - square x and reduce modulo q.
  */
@@ -232,5 +225,4 @@ fld_sq(fld_t dst, const fld_t a)
 	CARRY(c, c, tmp, 0);
 	CARRY(dst, c, tmp, 0);
 }
-
 #endif
