@@ -82,6 +82,7 @@ fld_reduce(fld_t res, const fld_t x)
 
 	/* -1 <= (res[4] >> FLD_LIMB_BITS) <= 1 */
 	res[0] = (res[0] & FLD_LIMB_MASK) + 19*(res[4] >> FLD_LIMB_BITS);
+
 	res[1] &= FLD_LIMB_MASK;
 	res[2] &= FLD_LIMB_MASK;
 	res[3] &= FLD_LIMB_MASK;
@@ -90,7 +91,7 @@ fld_reduce(fld_t res, const fld_t x)
 	/* the second round yields 
 	 *   -19 <= res[0] <= 2^51-1 + 19
 	 * and
-	 *   0 <= res[i] <= 2^51-1 for 1 <= i < 5.
+	 *   0 <= res[i] <= 2^51-1 for 1 <= i <= 4.
 	 */
 	res[0] -= 19;
 
@@ -122,7 +123,7 @@ fld_reduce(fld_t res, const fld_t x)
 	 * so in any case it is
 	 *   0 <= res[0] <= 2^51 - 1
 	 * and
-	 *   0 <= res[i] <= 2^51 - 1 for 1 <= i < 5
+	 *   0 <= res[i] <= 2^51 - 1 for 1 <= i <= 4
 	 * as wished.
 	 *
 	 * moreover res is the smallest non-negative representant of x modulo q.

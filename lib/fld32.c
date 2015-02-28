@@ -61,14 +61,45 @@ do {									\
  * fld_reduce - returns the smallest non-negative representation of x modulo q
  * 		with 0 <= x[i] <= 2^26 - 1 for i % 2 == 0 
  * 		and  0 <= x[i] <= 2^25 - 1 for i % 2 == 1.
+ *
+ * assumes:
+ *   abs(x[i]) <= 2^31 - 2^5 = 32 * (2^26 - 1)
  */
 void
 fld_reduce(fld_t res, const fld_t x)
 {
 	limb_t tmp;
+
 	CARRY(res, x, tmp, 19);
+	/* we have
+	 *   -2^26 - 19*2^5 <= res[0] <= 2^26 - 1 + 19*(2^5 - 1)
+	 * and for i >= 1:
+	 *   0 <= res[i] <= 2^26-1, i % 2 == 0,
+	 *   0 <= res[i] <= 2^25-1, i % 2 == 1.
+	 */
+
 	CARRY(res, res, tmp, 0);
+	/* now
+	 *   -2^26 - 19 <= res[0] <= 2^26 - 1 + 19
+	 * holds and, as before,
+	 *   0 <= res[i] <= 2^26-1, i % 2 == 0
+	 *   0 <= res[i] <= 2^25-1, i % 2 == 1,
+	 * for i >= 1.
+	 */
+
+	/* next round we will first remove our offset resulting in
+	 *   -2^26 - 38 <= res[0] <= 2^26 - 1,
+	 * therefor only a negative carry could appear.
+	 */
 	CARRY(res, res, tmp, -19);
+	/* now we have
+	 *   0 <= res[i] <= 2^26-1, i % 2 == 0
+	 *   0 <= res[i] <= 2^25-1, i % 2 == 1
+	 * for all limbs as wished.
+	 *
+	 * if a carry had happend, we even know
+	 *   2^26 - 38 - 19 <= res[0] <= 2^26 - 1.
+	 */
 }
 
 /*
