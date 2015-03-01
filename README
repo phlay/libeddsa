@@ -1,29 +1,43 @@
 About Riddler
 -------------
 This is a small cryptographic library, implementing cryptographic signatures 
-with ed25519 (see [1]) and diffie-hellman key exchange with curve25519 (see [2]).
+with ed25519 (see [1]) and diffie-hellman key exchange with curve25519 (sees
+[2]).
 
-PLEASE NOTE: I've written this code while studying the linked papers. The 
-resulting code turned out to be fairly good compared to other (pure) C
-implementations, so i decided to realease it. HOWEVER: If you are interessted 
-in ed25519 and curve25519 please check out the official code, NaCl from [3],
-first, which is the better choice for most use cases.
+My goal is to give a fast, but still very readable, C implemantation of these
+two crypto primitives without any complex framework. (If you need a full and
+easy to use framework with symmetric cipher and MAC included, please have a
+look at libnacl [3] or libsodium [4] which are both great.)
+
+If you need just ed25519-signatures or curve25519-diffie-hellman, however,
+libriddler may be for you: It is very small (under 90kb) and faster than
+libsodium (around 50% for ed25519 and 10% for curve25519 on my 64bit intel
+machine last time i checked).
+
+WARNING: This code has not been reviewed by anyone but me. It is
+generally not a good idea to use new code like this for critical systems.
+
 
 You are still here? Ok, this is what you get:
 
-  - completely written in portable and readable C 
+  - written in C
+  - fast and small
   - cmake build system
   - protection against timing attacks (see original papers for description)
-  - optimizations for 32bit and 64bit (autodetected at compile time)
   - static and dynamic link (PIC) support
+  - easy to use (look below)
   - public domain license
 
-Still missing is the batch verify feature for ed25519.
- 
+and negative features should also be mentioned:
+
+  - no code review by an external expert
+  - batch verify feature for ed25519 is missing
+
 
 [1] http://ed25519.cr.yp.to/ed25519-20110705.pdf
 [2] http://cr.yp.to/ecdh/curve25519-20060209.pdf
 [3] http://nacl.cr.yp.to
+[4] https://github.com/jedisct1/libsodium
 
 
 
@@ -118,8 +132,14 @@ the signing with DSA and key-exchange with Diffie-Hellman works.
   cc -o foo foo.c -lriddler
 
 
-  using static library
-  --------------------
-  If you use the static version of libriddler, please make sure to compile
-  your source with -DRIDDLER_STATIC. This is especially important for
-  windows users.
+Note to MS Windows users
+------------------------
+At the moment the 64bit version of this code does not compile under Microsofts Visual
+Studio (128bit integers are not supported). Either use the 32bit version
+(which compiles fine) or use gcc/clang to compile a DLL and use that in your
+Visual Studio project.
+
+If you use the static version of libriddler, please make sure to compile
+your source with RIDDLER_STATIC defined (see project properties dialog under
+Visual Studio or add -DRIDDLER_STATIC to the command line if you are using
+gcc/clang under Windows).
