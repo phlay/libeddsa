@@ -1,7 +1,7 @@
 About Riddler
 -------------
 This is a small cryptographic library, implementing cryptographic signatures 
-with ed25519 (see [1]) and diffie-hellman key exchange with curve25519 (sees
+with ed25519 (see [1]) and diffie-hellman key exchange with curve25519 (see
 [2]).
 
 My goal is to give a fast, but still very readable, C implemantation of these
