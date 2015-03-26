@@ -23,13 +23,14 @@ You are still here? Ok, this is what you get:
   - written in C
   - fast and small
   - cmake build system
-  - protection against timing attacks (see original papers for description)
+  - protection against timing attacks as far as possible in C
   - static and dynamic link (PIC) support
-  - easy to use (look below)
+  - easy to use (see below)
   - public domain license
 
 and negative features should also be mentioned:
 
+  - timing protection might be optimized out by your compiler
   - no code review by an external expert
   - batch verify feature for ed25519 is missing
 
