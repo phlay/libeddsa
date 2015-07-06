@@ -2,6 +2,7 @@
 #define EDDSA_H
 
 #include <stddef.h>	/* for size_t */
+#include <stdbool.h>	/* foor bool */
 #include <stdint.h>	/* for uint8_t */
 
 #ifndef __has_attribute
@@ -33,7 +34,7 @@ EDDSA_DECL void	eddsa_sign(uint8_t sig[64],
 			   const uint8_t sec[32],
 			   const uint8_t pub[32],
 			   const uint8_t *data, size_t len);
-EDDSA_DECL int	eddsa_verify(const uint8_t sig[64],
+EDDSA_DECL bool	eddsa_verify(const uint8_t sig[64],
 			     const uint8_t pub[32],
 			     const uint8_t *data, size_t len);
 

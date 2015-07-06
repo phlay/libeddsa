@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -132,7 +133,7 @@ eddsa_sign(uint8_t sig[64], const uint8_t sec[32], const uint8_t pub[32], const 
  *
  * return 0 if signature is ok and -1 otherwise.
  */
-static int
+static bool
 verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t len)
 {
 	sha512ctx hash;
@@ -163,18 +164,18 @@ verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t
 	
 	/* is export(C) == export(R) (vartime) */
 	if (memcmp(check, sig, 32) == 0)
-		return 0;
+		return true;
 
-	return -1;
+	return false;
 }
 
 /*
  * eddsa_verify - stack-burn-wrapper for verify
  */
-int
+bool
 eddsa_verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t len)
 {
-	int rval;
+	bool rval;
 	rval = verify(sig, pub, data, len);
 	burnstack(65536);
 	return rval;

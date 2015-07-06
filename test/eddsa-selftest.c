@@ -23,7 +23,6 @@ int main()
 	uint8_t checkpub[32];
 	uint8_t checksig[64];
 
-	int rc;
 	int i;
 
 	for (i = 0; i < table_num; i++) {
@@ -42,8 +41,7 @@ int main()
 		}
 
 		/* check three: does signature get verified? */
-		rc = eddsa_verify(table[i].sig, table[i].pub, table[i].msg, i);
-		if (rc != 0) {
+		if (!eddsa_verify(table[i].sig, table[i].pub, table[i].msg, i)) {
 			fprintf(stderr, "eddsa-selftest: verifying signature number %d failed\n", i+1);
 			return 1;
 		}
