@@ -9,16 +9,11 @@ two crypto primitives without any complex framework. (If you need a full and
 easy to use framework with symmetric cipher and MAC included, please have a
 look at libnacl [3] or libsodium [4] which are both great.)
 
-If you need just ed25519-signatures or curve25519-diffie-hellman, however,
-libeddsa may be for you: It is very small (under 90kb) and faster than
-libsodium (around 50% for ed25519 and 10% for curve25519 on my 64bit intel
-machine last time i checked).
-
-WARNING: This code has not been reviewed by anyone but me. It is
-generally not a good idea to use new code like this for critical systems.
+If you need just ed25519-signatures or curve25519-diffie-hellman with a simple
+API, however, libeddsa may be for you: It is small (under 90kb) and very fast.
 
 
-You are still here? Ok, this is what you get:
+Features:
 
   - written in C
   - fast and small
@@ -30,8 +25,7 @@ You are still here? Ok, this is what you get:
 
 and negative features should also be mentioned:
 
-  - timing protection might be optimized out by your compiler
-  - no code review by an external expert
+  - timing protection might be optimized away by your compiler
   - batch verify feature for ed25519 is missing
 
 
@@ -39,7 +33,6 @@ and negative features should also be mentioned:
 [2] http://cr.yp.to/ecdh/curve25519-20060209.pdf
 [3] http://nacl.cr.yp.to
 [4] https://github.com/jedisct1/libsodium
-
 
 
 Build & Install
@@ -81,7 +74,7 @@ the signing with DSA and key-exchange with Diffie-Hellman works.
   void eddsa_genpub(uint8_t pub[32], const uint8_t sec[32]);
   void eddsa_sign(uint8_t sig[64], const uint8_t sec[32],
 		  const uint8_t pub[32], const uint8_t *data, size_t len);
-  int  eddsa_verify(const uint8_t sig[64], const uint8_t pub[32],
+  bool eddsa_verify(const uint8_t sig[64], const uint8_t pub[32],
 		    const uint8_t *data, size_t len);
 
 
@@ -91,8 +84,8 @@ the signing with DSA and key-exchange with Diffie-Hellman works.
 
   To sign data use eddsa_sign to generate a 64 byte long signature.
 
-  Verify a signature by calling eddsa_verify: It returns 0 if the signature is
-  ok and -1 otherwise.
+  Verify a signature by calling eddsa_verify: It returns true if the signature is
+  ok and false otherwise.
 
 
   diffie-hellman (curve25519)
