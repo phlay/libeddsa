@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <riddler.h>
+#include <eddsa.h>
 
 #include "sha512.h"
 

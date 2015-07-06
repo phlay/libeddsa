@@ -1,5 +1,5 @@
-About Riddler
--------------
+About libeddsa
+--------------
 This is a small cryptographic library, implementing cryptographic signatures 
 with ed25519 (see [1]) and diffie-hellman key exchange with curve25519 (see
 [2]).
@@ -10,7 +10,7 @@ easy to use framework with symmetric cipher and MAC included, please have a
 look at libnacl [3] or libsodium [4] which are both great.)
 
 If you need just ed25519-signatures or curve25519-diffie-hellman, however,
-libriddler may be for you: It is very small (under 90kb) and faster than
+libeddsa may be for you: It is very small (under 90kb) and faster than
 libsodium (around 50% for ed25519 and 10% for curve25519 on my 64bit intel
 machine last time i checked).
 
@@ -76,7 +76,7 @@ the signing with DSA and key-exchange with Diffie-Hellman works.
   signatures with eddsa (ed25519)
   -------------------------------
 
-  #include <riddler.h>
+  #include <eddsa.h>
 
   void eddsa_genpub(uint8_t pub[32], const uint8_t sec[32]);
   void eddsa_sign(uint8_t sig[64], const uint8_t sec[32],
@@ -98,7 +98,7 @@ the signing with DSA and key-exchange with Diffie-Hellman works.
   diffie-hellman (curve25519)
   ---------------------------
 
-  #include <riddler.h>
+  #include <eddsa.h>
 
   void DH(uint8_t out[32], const uint8_t sec[32], const uint8_t base[32]);
 
@@ -128,9 +128,9 @@ the signing with DSA and key-exchange with Diffie-Hellman works.
   using as shared library
   -----------------------
   If the library is correctly installed, all you need is adding
-  '-lriddler' to your linker command line. For example:
+  '-leddsa' to your linker command line. For example:
 
-  cc -o foo foo.c -lriddler
+  cc -o foo foo.c -leddsa
 
 
 Note to MS Windows users
@@ -140,7 +140,7 @@ Studio (128bit integers are not supported). Either use the 32bit version
 (which compiles fine) or use gcc/clang to compile a DLL and use that in your
 Visual Studio project.
 
-If you use the static version of libriddler, please make sure to compile
-your source with RIDDLER_STATIC defined (see project properties dialog under
-Visual Studio or add -DRIDDLER_STATIC to the command line if you are using
+If you use the static version of libeddsa, please make sure to compile
+your source with EDDSA_STATIC defined (see project properties dialog under
+Visual Studio or add -DEDDSA_STATIC to the command line if you are using
 gcc/clang under Windows).

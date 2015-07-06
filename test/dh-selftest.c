@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <riddler.h>
+#include <eddsa.h>
 
 struct {
 	uint8_t		base[32];

@@ -2,10 +2,10 @@ include(CheckCCompilerFlag)
 
 cmake_minimum_required(VERSION 2.8)
 
-project(riddler C)
+project(eddsa C)
 
-set(RIDDLER_VERSION_MAJOR 0)
-set(RIDDLER_VERSION_MINOR 1)
+set(EDDSA_VERSION_MAJOR 0)
+set(EDDSA_VERSION_MINOR 2)
 
 
 option(USE_STACKCLEAN "clean all secret variables from stack" ON)
