@@ -5,14 +5,22 @@
 
 #include "compat.h"
 
-#ifdef USE_STACKCLEAN
 
-void	burn(void *s, size_t n);
+#if defined(HAVE_MEMSET_S)
+
+#include <string.h>
+static INLINE void burn(void *dest, size_t len) { memset_s(dest, len, 0, len); }
+
+#elif defined(HAVE_EXPLICIT_BZERO)
+
+#include <string.h>
+static INLINE void burn(void *dest, size_t len) { explicit_bzero(dest, len); }
 
 #else
 
-static INLINE void burn(void *s, size_t n) { }
+void	burn(void *dest, size_t len);
 
 #endif
+
 
 #endif

@@ -1,4 +1,5 @@
 include(CheckCCompilerFlag)
+include(CheckPrototypeDefinition)
 
 cmake_minimum_required(VERSION 2.8)
 
@@ -16,6 +17,20 @@ option(BUILD_TESTING "build test" OFF)
 if (UNIX)
 	set(CMAKE_C_FLAGS "-std=c99 -fwrapv -Wall -pedantic -O3")
 endif ()
+
+# check for memset_s and co
+#
+check_prototype_definition(memset_s
+	"errno_t memset_s( void *dest, rsize_t destsz, int ch, rsize_t count )"
+	"0"
+	"string.h"
+	HAVE_MEMSET_S)
+
+check_prototype_definition(explicit_bzero
+	"void explicit_bzero(void *b, size_t len)"
+	""
+	"string.h"
+	HAVE_EXPLICIT_BZERO)
 
 
 # does our compiler have hidden-visibility feature?
