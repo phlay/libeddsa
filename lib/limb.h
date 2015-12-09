@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "bitness.h"
+
 #ifdef USE_64BIT
 
 typedef int64_t limb_t;

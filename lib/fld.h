@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "bitness.h"
 #include "compat.h"
 #include "limb.h"
 
@@ -57,7 +58,7 @@ extern const fld_t con_j;
 
 
 /*
- * prototypes for fld32.c / fld64.c
+ * prototypes for 32bit/64bit specific functions 
  */
 void	fld_reduce(fld_t dst, const fld_t x);
 void	fld_import(fld_t dst, const uint8_t src[32]);
@@ -68,7 +69,7 @@ void	fld_sq(fld_t res, const fld_t a);
 
 
 /*
- * prototypes for common code in fld.c
+ * prototypes for common code
  */
 int	fld_eq(const fld_t a, const fld_t b);
 void	fld_inv(fld_t res, const fld_t z);

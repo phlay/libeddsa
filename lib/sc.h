@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "bitness.h"
 #include "compat.h"
 #include "limb.h"
 

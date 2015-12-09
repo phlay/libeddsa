@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8)
 project(eddsa C)
 
 set(EDDSA_VERSION_MAJOR 0)
-set(EDDSA_VERSION_MINOR 2)
+set(EDDSA_VERSION_MINOR 3)
 
 
 option(USE_STACKCLEAN "clean all secret variables from stack" ON)
@@ -43,14 +43,6 @@ endif ()
 
 
 
-# check platform bitness
-#
-set(BITNESS 32)
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(BITNESS 64)
-endif()
-
-
 # add library source code
 #
 add_subdirectory(lib)
@@ -61,6 +53,10 @@ add_subdirectory(lib)
 if (BUILD_TESTING)
   enable_testing()
   add_subdirectory(test)
+endif ()
+
+if (NOT BITNESS)
+  set(BITNESS autodetect)
 endif ()
 
 

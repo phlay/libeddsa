@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "bitness.h"
 #include "fld.h"
 #include "sc.h"
 #include "ed.h"

@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 
+#include "bitness.h"
 #include "compat.h"
 #include "sc.h"
 

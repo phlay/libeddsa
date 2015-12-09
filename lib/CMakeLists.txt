@@ -1,11 +1,6 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(EDDSA_SRC fld.c sc.c ed.c sha512.c eddsa.c dh.c sha256.c)
-if (BITNESS EQUAL 64)
-  list(APPEND EDDSA_SRC fld64.c)
-else ()
-  list(APPEND EDDSA_SRC fld32.c)
-endif ()
 
 if (USE_STACKCLEAN)
   list(APPEND EDDSA_SRC burn.c burnstack.c)
@@ -17,7 +12,10 @@ add_library(eddsa SHARED ${EDDSA_SRC})
 
 
 if (BITNESS EQUAL 64)
+  set_property(TARGET eddsa APPEND PROPERTY COMPILE_DEFINITIONS NO_AUTO_BITNESS)
   set_property(TARGET eddsa APPEND PROPERTY COMPILE_DEFINITIONS USE_64BIT)
+elseif (BITNESS EQUAL 32)
+  set_property(TARGET eddsa APPEND PROPERTY COMPILE_DEFINITIONS NO_AUTO_BITNESS)
 endif ()
 
 if (USE_STACKCLEAN)
@@ -54,7 +52,10 @@ if (BUILD_STATIC)
   add_library(eddsa-static STATIC ${EDDSA_SRC})
 
   if (BITNESS EQUAL 64)
+    set_property(TARGET eddsa-static APPEND PROPERTY COMPILE_DEFINITIONS NO_AUTO_BITNESS)
     set_property(TARGET eddsa-static APPEND PROPERTY COMPILE_DEFINITIONS USE_64BIT)
+  elseif (BITNESS EQUAL 32)
+    set_property(TARGET eddsa-static APPEND PROPERTY COMPILE_DEFINITIONS NO_AUTO_BITNESS)
   endif ()
 
   if (USE_STACKCLEAN)
