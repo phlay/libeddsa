@@ -28,10 +28,10 @@ struct mg {
 
 
 /*
- * memswap - helper function to conditionally swap a with b
+ * ctmemswap - helper function to conditionally swap a with b
  */
 static void
-memswap(void *a, void *b, size_t len, uint8_t mask)
+ctmemswap(void *a, void *b, size_t len, uint8_t mask)
 {
 	uint8_t *pa = (uint8_t*)a;
 	uint8_t *pb = (uint8_t*)b;
@@ -112,9 +112,9 @@ mg_scale(struct mg *out, const struct mg *P, const uint8_t x[32])
 	for (i = 31; i >= 0; i--) {
 		foo = x[i];
 		for (j = 8; j > 0; j--, foo <<= 1) {
-			memswap(out, &T, sizeof(struct mg), foo >> 7);
+			ctmemswap(out, &T, sizeof(struct mg), foo >> 7);
 			montgomery(out, &T, P);
-			memswap(out, &T, sizeof(struct mg), foo >> 7);
+			ctmemswap(out, &T, sizeof(struct mg), foo >> 7);
 		}
 	}
 }
