@@ -125,7 +125,7 @@ sha256_init(sha256ctx *ctx)
 void
 sha256_add(sha256ctx *ctx, const uint8_t *data, size_t len)
 {
-	int i;
+	unsigned int i;
 
 	if (ctx->fill > 0) {
 		/* fill internal buffer up and compress */
