@@ -9,7 +9,7 @@ void burnstack(int len);
 
 #else
 
-static INLINE void burnstack(int len) { }
+static INLINE void burnstack(int len) { (void)len; }
 
 #endif
 

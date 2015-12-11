@@ -3,6 +3,9 @@
 #include "burn.h"
 #include "burnstack.h"
 
+
+#ifdef USE_STACKCLEAN
+
 /*
  * burnstack - cleanup our stack
  */
@@ -14,3 +17,5 @@ burnstack(int len)
 	if (len > 0)
 		burnstack(len-1024);
 }
+
+#endif
