@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <eddsa.h>
+#include "eddsa.h"
 
 #include "sha512.h"
 #include "sc.h"

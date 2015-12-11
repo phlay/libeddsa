@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <eddsa.h>
+#include "eddsa.h"
 
 #include "fld.h"
 #include "burnstack.h"
