@@ -15,7 +15,7 @@ option(BUILD_TESTING "build test" OFF)
 
 
 if (UNIX)
-	set(CMAKE_C_FLAGS "-std=c99 -fwrapv -Wall -pedantic -O3")
+	set(CMAKE_C_FLAGS "-std=c99 -fwrapv -Wall -Wextra -pedantic -O3")
 endif ()
 
 # check for memset_s and co
