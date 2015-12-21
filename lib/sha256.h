@@ -8,7 +8,7 @@ typedef struct {
 	uint32_t	state[8];
 	uint64_t	count;
 	uint8_t		buffer[64];
-	unsigned int	fill;
+	size_t		fill;
 } sha256ctx;
 
 void sha256_init(sha256ctx *ctx);

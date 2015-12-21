@@ -9,6 +9,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "sha512.h"
 
@@ -142,8 +143,6 @@ sha512_init(sha512ctx *ctx)
 void
 sha512_add(sha512ctx *ctx, const uint8_t *data, size_t len)
 {
-	unsigned int i;
-
 	if (ctx->fill > 0) {
 		/* fill internal buffer up and compress */
 		while (ctx->fill < 128 && len > 0) {
@@ -168,9 +167,7 @@ sha512_add(sha512ctx *ctx, const uint8_t *data, size_t len)
 	}
 
 	/* save rest for next time */
-	for (i = 0; i < len; i++)
-		ctx->buffer[i] = data[i];
-
+	memcpy(ctx->buffer, data, len);
 	ctx->fill = len;
 }
 
@@ -178,7 +175,7 @@ sha512_add(sha512ctx *ctx, const uint8_t *data, size_t len)
 void
 sha512_done(sha512ctx *ctx, uint8_t out[64])
 {
-	int rest;
+	size_t rest;
 	int i;
 
 	rest = ctx->fill;

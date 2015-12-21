@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "sha256.h"
 
@@ -125,8 +126,6 @@ sha256_init(sha256ctx *ctx)
 void
 sha256_add(sha256ctx *ctx, const uint8_t *data, size_t len)
 {
-	unsigned int i;
-
 	if (ctx->fill > 0) {
 		/* fill internal buffer up and compress */
 		while (ctx->fill < 64 && len > 0) {
@@ -151,9 +150,7 @@ sha256_add(sha256ctx *ctx, const uint8_t *data, size_t len)
 	}
 
 	/* save rest for next time */
-	for (i = 0; i < len; i++)
-		ctx->buffer[i] = data[i];
-
+	memcpy(ctx->buffer, data, len);
 	ctx->fill = len;
 }
 
@@ -161,7 +158,7 @@ sha256_add(sha256ctx *ctx, const uint8_t *data, size_t len)
 void
 sha256_done(sha256ctx *ctx, uint8_t out[32])
 {
-	int rest;
+	size_t rest;
 	int i;
 
 	rest = ctx->fill;

@@ -10,7 +10,7 @@ typedef struct {
 	uint64_t	count;
 	
 	uint8_t		buffer[128];
-	unsigned long	fill;
+	size_t		fill;
 } sha512ctx;
 
 
