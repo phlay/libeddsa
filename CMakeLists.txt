@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8)
 project(eddsa C)
 
 set(EDDSA_VERSION_MAJOR 0)
-set(EDDSA_VERSION_MINOR 3)
+set(EDDSA_VERSION_MINOR 4)
 
 
 option(USE_STACKCLEAN "clean all secret variables from stack" ON)

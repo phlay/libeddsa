@@ -14,25 +14,21 @@ API, however, libeddsa may be for you: It is small (under 90kb) and very fast.
 
 
 Features:
-
   - written in C
   - fast and small
   - cmake build system
   - protection against timing attacks as far as possible in C
-  - static and dynamic link (PIC) support
+  - static and dynamic link support
   - easy to use (see below)
   - public domain license
 
-and negative features should also be mentioned:
-
-  - timing protection might be optimized away by your compiler
-  - batch verify feature for ed25519 is missing
 
 
 [1] http://ed25519.cr.yp.to/ed25519-20110705.pdf
 [2] http://cr.yp.to/ecdh/curve25519-20060209.pdf
 [3] http://nacl.cr.yp.to
 [4] https://github.com/jedisct1/libsodium
+
 
 
 Build & Install
@@ -79,8 +75,8 @@ the signing with DSA and key-exchange with Diffie-Hellman works.
 
 
   Secret- and public-key are both 32 bytes long. To generate a secret key
-  just fill it with high quality random data. The public key is than derived
-  from it by calling eddsa_genpub.
+  just fill it with high quality random data. The public key is derived from it
+  the secret key by calling eddsa_genpub.
 
   To sign data use eddsa_sign to generate a 64 byte long signature.
 

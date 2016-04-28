@@ -38,9 +38,18 @@ EDDSA_DECL bool	eddsa_verify(const uint8_t sig[64],
 			     const uint8_t pub[32],
 			     const uint8_t *data, size_t len);
 
+
 /* diffie-hellman */
 EDDSA_DECL void	DH(uint8_t out[32], const uint8_t sec[32],
 		   const uint8_t base[32]);
+
+
+/* key conversion */
+EDDSA_DECL void eddsa_pk_eddsa_to_dh(uint8_t out[32],
+				     const uint8_t in[32]);
+
+EDDSA_DECL void eddsa_sk_eddsa_to_dh(uint8_t out[32],
+				     const uint8_t in[32]);
 
 
 #endif

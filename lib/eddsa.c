@@ -28,35 +28,43 @@
 #include "burnstack.h"
 
 
+static void
+ed25519_key_setup(uint8_t out[64], const uint8_t sk[32])
+{
+	sha512ctx hash;
+
+	/* hash secret-key */
+	sha512_init(&hash);
+	sha512_add(&hash, sk, 32);
+	sha512_done(&hash, out);
+
+	/* delete bit 255 and set bit 254 */
+	out[31] &= 0x7f;
+	out[31] |= 0x40;
+	/* delete 3 lowest bits */
+	out[0] &= 0xf8;
+}
+
+
 /*
  * genpub - derive public key from secret key
  */
 static void
 genpub(uint8_t pub[32], const uint8_t sec[32])
 {
-	sha512ctx hash;
 	uint8_t h[64];
 	struct ed A;
 	sc_t a;
 
-	/* hash secret-key */
-	sha512_init(&hash);
-	sha512_add(&hash, sec, 32);
-	sha512_done(&hash, h);
-	
-	/* delete bit 255 and set bit 254 */
-	h[31] &= 0x7f;
-	h[31] |= 0x40;
-	/* delete 3 lowest bits */
-	h[0] &= 0xf8;
-	
-	/* now the first 256bit of h form our DH secret a */
+	/* derive secret and import it */
+	ed25519_key_setup(h, sec);
 	sc_import(a, h, 32);
 
-	/* calculate public key */
+	/* multiply with base point to calculate public key */
 	ed_scale_base(&A, a);
 	ed_export(pub, &A);
 }
+
 
 /*
  * eddsa_genpub - stack-clearing wrapper for genpub
@@ -81,15 +89,8 @@ sign(uint8_t sig[64], const uint8_t sec[32], const uint8_t pub[32], const uint8_
 	sc_t a, r, t, S;
 	struct ed R;
 
-	/* hash secret key */
-	sha512_init(&hash);
-	sha512_add(&hash, sec, 32);
-	sha512_done(&hash, h);
-
-	/* derive DH secret a */
-	h[31] &= 0x7f;
-	h[31] |= 0x40;
-	h[0] &= 0xf8;
+	/* derive secret scalar a */
+	ed25519_key_setup(h, sec);
 	sc_import(a, h, 32);
 
 	/* hash next 32 bytes together with data to form r */
@@ -129,12 +130,15 @@ eddsa_sign(uint8_t sig[64], const uint8_t sec[32], const uint8_t pub[32], const 
 
 
 /*
- * verify - verifies an ed25519 signature of given data. (vartime)
+ * eddsa_verify - verifies an ed25519 signature of given data.
+ *
+ * note: this functions runs in vartime and does no stack cleanup, since
+ * all information are considered public.
  *
  * return 0 if signature is ok and -1 otherwise.
  */
-static bool
-verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t len)
+bool
+eddsa_verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t len)
 {
 	sha512ctx hash;
 	uint8_t h[64];
@@ -156,27 +160,86 @@ verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t
 	sha512_done(&hash, h);
 	sc_import(t, h, 64);
 
-	/* verify signature (vartime) */
+	/* verify signature (vartime!) */
 	fld_neg(A.x, A.x);
 	fld_neg(A.t, A.t);
 	ed_double_scale(&C, S, &ed_BP, t, &A);
 	ed_export(check, &C);
 	
-	/* is export(C) == export(R) (vartime) */
+	/* is export(C) == export(R) (vartime!) */
 	if (memcmp(check, sig, 32) == 0)
 		return true;
 
 	return false;
 }
 
+
 /*
- * eddsa_verify - stack-burn-wrapper for verify
+ * eddsa_pk_eddsa_to_dh - convert a ed25519 public key to curve25519
  */
-bool
-eddsa_verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t len)
+void
+eddsa_pk_eddsa_to_dh(uint8_t out[32], const uint8_t in[32])
 {
-	bool rval;
-	rval = verify(sig, pub, data, len);
+	struct ed P;
+	fld_t u, t;
+
+	/* import ed25519 public key */
+	ed_import(&P, in);
+
+	/*
+	 * We now have the point P = (x,y) on the curve
+	 *
+	 * 	x^2 + y^2 = 1 + (121665/121666)x^2y^2
+	 *
+	 * and want the u-component of the corresponding point
+	 * on the birationally equivalent montgomery curve
+	 *
+	 * 	v^2 = u^3 + 486662 u^2 + u.
+	 *
+	 *
+	 * From the paper [1] we get
+	 *
+	 * 	y = (u - 1) / (u + 1),
+	 *
+	 * which immediately yields
+	 *
+	 * 	u = (1 + y) / (1 - y)
+	 *
+	 * or, by using projective coordinantes,
+	 *
+	 * 	u = (z + y) / (z - y).
+	 */
+
+	/* u <- z + y */
+	fld_add(u, P.z, P.y);
+
+	/* t <- (z - y)^-1 */
+	fld_sub(t, P.z, P.y);
+	fld_inv(t, t);
+
+	/* u <- u * t = (z+y) / (z-y) */
+	fld_mul(u, u, t);
+
+	/* export curve25519 public key */
+	fld_export(out, u);
+}
+
+
+/*
+ * sk_eddsa_to_dh - convert a ed25519 secret key to curve25519
+ */
+
+static void
+sk_eddsa_to_dh(uint8_t out[32], const uint8_t in[32])
+{
+	uint8_t h[64];
+	ed25519_key_setup(h, in);
+	memcpy(out, h, 32);
+}
+
+void
+eddsa_sk_eddsa_to_dh(uint8_t out[32], const uint8_t in[32])
+{
+	sk_eddsa_to_dh(out, in);
 	burnstack(65536);
-	return rval;
 }
