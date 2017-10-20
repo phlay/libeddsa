@@ -28,6 +28,10 @@
 #endif
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* eddsa */
 EDDSA_DECL void	eddsa_genpub(uint8_t pub[32], const uint8_t sec[32]);
 EDDSA_DECL void	eddsa_sign(uint8_t sig[64],
@@ -50,6 +54,8 @@ EDDSA_DECL void eddsa_pk_eddsa_to_dh(uint8_t out[32],
 
 EDDSA_DECL void eddsa_sk_eddsa_to_dh(uint8_t out[32],
 				     const uint8_t in[32]);
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif

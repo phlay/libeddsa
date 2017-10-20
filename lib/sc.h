@@ -8,6 +8,9 @@
 #include "compat.h"
 #include "limb.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef USE_64BIT
 
@@ -54,5 +57,7 @@ sc_add(sc_t res, const sc_t a, const sc_t b)
 		res[i] = a[i] + b[i];
 }
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
