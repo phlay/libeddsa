@@ -318,7 +318,8 @@ const fld_t con_j = { 34513072, 25610706, 9377949, 3500415, 12389472, 33281959,
 #define CARRY(dst, src, tmp, off)	      				\
 do {									\
 	int _ii;							\
-	(tmp) = (off) << FLD_LIMB_BITS(0);				\
+	(tmp) = (off);							\
+	(tmp) <<= FLD_LIMB_BITS(0);					\
 	for (_ii = 0; _ii < FLD_LIMB_NUM; _ii += 2) {			\
 		(tmp) = ((tmp) >> FLD_LIMB_BITS(0)) + (src)[_ii];	\
 		(dst)[_ii] = (tmp) & FLD_LIMB_MASK(1);			\
