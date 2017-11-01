@@ -11,7 +11,7 @@ struct {
 	uint8_t		sig[ED25519_SIG_LEN];
 	uint8_t		msg[1024];
 } table[] = {
-	#include "eddsa-table.h"
+	#include "ed25519-table.h"
 };
 
 const int table_num = sizeof(table) / sizeof(table[0]);

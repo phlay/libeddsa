@@ -1,5 +1,5 @@
 /*
- * implement curve25519 diffie-hellman from [1].
+ * implement x25519 diffie-hellman from [1].
  *
  * This code is public domain.
  *

@@ -9,7 +9,7 @@ struct {
 	uint8_t		scalar[X25519_KEY_LEN];
 	uint8_t		result[X25519_KEY_LEN];
 } table[] = {
-	#include "dh-table.h"
+	#include "x25519-table.h"
 };
 
 const int table_num = sizeof(table) / sizeof(table[0]);

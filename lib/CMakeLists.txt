@@ -1,6 +1,6 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(EDDSA_SRC fld.c sc.c ed.c sha512.c eddsa.c dh.c)
+set(EDDSA_SRC fld.c sc.c ed.c sha512.c ed25519-sha512.c x25519.c)
 
 if (USE_STACKCLEAN)
   list(APPEND EDDSA_SRC burn.c burnstack.c)
