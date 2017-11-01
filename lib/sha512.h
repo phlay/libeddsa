@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,4 +23,5 @@ void sha512_done(sha512ctx *ctx, uint8_t out[64]);
 #ifdef __cplusplus
 }
 #endif
+
 #endif

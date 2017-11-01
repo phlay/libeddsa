@@ -1,5 +1,5 @@
 /*
- * implementing ed25519-sha-512 from [1].
+ * implementing ed25519-sha512 from [1].
  *
  * This code is public domain.
  *
@@ -29,13 +29,13 @@
 
 
 static void
-ed25519_key_setup(uint8_t out[64], const uint8_t sk[32])
+ed25519_key_setup(uint8_t out[64], const uint8_t sk[ED25519_KEY_LEN])
 {
 	sha512ctx hash;
 
 	/* hash secret-key */
 	sha512_init(&hash);
-	sha512_add(&hash, sk, 32);
+	sha512_add(&hash, sk, ED25519_KEY_LEN);
 	sha512_done(&hash, out);
 
 	/* delete bit 255 and set bit 254 */
@@ -50,7 +50,7 @@ ed25519_key_setup(uint8_t out[64], const uint8_t sk[32])
  * genpub - derive public key from secret key
  */
 static void
-genpub(uint8_t pub[32], const uint8_t sec[32])
+genpub(uint8_t pub[ED25519_KEY_LEN], const uint8_t sec[ED25519_KEY_LEN])
 {
 	uint8_t h[64];
 	struct ed A;
@@ -67,10 +67,10 @@ genpub(uint8_t pub[32], const uint8_t sec[32])
 
 
 /*
- * eddsa_genpub - stack-clearing wrapper for genpub
+ * ed25519_genpub - stack-clearing wrapper for genpub
  */
 void
-eddsa_genpub(uint8_t pub[32], const uint8_t sec[32])
+ed25519_genpub(uint8_t pub[ED25519_KEY_LEN], const uint8_t sec[ED25519_KEY_LEN])
 {
 	genpub(pub, sec);
 	burnstack(65536);
@@ -81,7 +81,10 @@ eddsa_genpub(uint8_t pub[32], const uint8_t sec[32])
  * sign - create ed25519 signature of data using secret key sec
  */
 static void
-sign(uint8_t sig[64], const uint8_t sec[32], const uint8_t pub[32], const uint8_t *data, size_t len)
+sign(uint8_t sig[ED25519_SIG_LEN],
+     const uint8_t sec[ED25519_KEY_LEN],
+     const uint8_t pub[ED25519_KEY_LEN],
+     const uint8_t *data, size_t len)
 {
 	sha512ctx hash;
 	uint8_t h[64];
@@ -118,11 +121,15 @@ sign(uint8_t sig[64], const uint8_t sec[32], const uint8_t pub[32], const uint8_
 	sc_export(sig+32, S);
 }
 
+
 /*
- * eddsa_sign - stack-cleaning wrapper for sign
+ * ed25519_sign - stack-cleaning wrapper for sign
  */
 void
-eddsa_sign(uint8_t sig[64], const uint8_t sec[32], const uint8_t pub[32], const uint8_t *data, size_t len)
+ed25519_sign(uint8_t sig[ED25519_SIG_LEN],
+	   const uint8_t sec[ED25519_KEY_LEN],
+	   const uint8_t pub[ED25519_KEY_LEN],
+	   const uint8_t *data, size_t len)
 {
 	sign(sig, sec, pub, data, len);
 	burnstack(65536);
@@ -130,15 +137,17 @@ eddsa_sign(uint8_t sig[64], const uint8_t sec[32], const uint8_t pub[32], const 
 
 
 /*
- * eddsa_verify - verifies an ed25519 signature of given data.
+ * ed25519_verify - verifies an ed25519-signature of given data.
  *
  * note: this functions runs in vartime and does no stack cleanup, since
  * all information are considered public.
  *
- * return 0 if signature is ok and -1 otherwise.
+ * returns true if signature is ok and false otherwise.
  */
 bool
-eddsa_verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, size_t len)
+ed25519_verify(const uint8_t sig[ED25519_SIG_LEN],
+	       const uint8_t pub[ED25519_KEY_LEN],
+	       const uint8_t *data, size_t len)
 {
 	sha512ctx hash;
 	uint8_t h[64];
@@ -167,18 +176,15 @@ eddsa_verify(const uint8_t sig[64], const uint8_t pub[32], const uint8_t *data, 
 	ed_export(check, &C);
 	
 	/* is export(C) == export(R) (vartime!) */
-	if (memcmp(check, sig, 32) == 0)
-		return true;
-
-	return false;
+	return (memcmp(check, sig, 32) == 0);
 }
 
 
 /*
- * eddsa_pk_eddsa_to_dh - convert a ed25519 public key to curve25519
+ * pk_ed25519_to_x25519 - convert a ed25519 public key to x25519
  */
 void
-eddsa_pk_eddsa_to_dh(uint8_t out[32], const uint8_t in[32])
+pk_ed25519_to_x25519(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
 {
 	struct ed P;
 	fld_t u, t;
@@ -225,21 +231,93 @@ eddsa_pk_eddsa_to_dh(uint8_t out[32], const uint8_t in[32])
 }
 
 
-/*
- * sk_eddsa_to_dh - convert a ed25519 secret key to curve25519
- */
 
+/*
+ * conv_sk_ed25519_to_x25519 - convert a ed25519 secret key to x25519 secret.
+ */
 static void
-sk_eddsa_to_dh(uint8_t out[32], const uint8_t in[32])
+conv_sk_ed25519_to_x25519(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
 {
 	uint8_t h[64];
 	ed25519_key_setup(h, in);
-	memcpy(out, h, 32);
+	memcpy(out, h, X25519_KEY_LEN);
 }
 
+
+/*
+ * sk_ed25519_to_x25519 - stack-clearing wrapper for conv_sk_ed25519_to_x25519.
+ */
 void
-eddsa_sk_eddsa_to_dh(uint8_t out[32], const uint8_t in[32])
+sk_ed25519_to_x25519(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
 {
-	sk_eddsa_to_dh(out, in);
+	conv_sk_ed25519_to_x25519(out, in);
+	burnstack(65536);
+}
+
+
+
+
+
+/*
+ * Obsolete Interface, this will be removed in the future.
+ */
+
+
+/*
+ * eddsa_genpub - stack-clearing wrapper for genpub (obsolete interface!)
+ */
+void
+eddsa_genpub(uint8_t pub[32], const uint8_t sec[32])
+{
+	genpub(pub, sec);
+	burnstack(65536);
+}
+
+
+/*
+ * eddsa_sign - stack-cleaning wrapper for sign (obsolete interface!)
+ */
+void
+eddsa_sign(uint8_t sig[ED25519_SIG_LEN],
+	   const uint8_t sec[ED25519_KEY_LEN],
+	   const uint8_t pub[ED25519_KEY_LEN],
+	   const uint8_t *data, size_t len)
+{
+	sign(sig, sec, pub, data, len);
+	burnstack(65536);
+}
+
+/*
+ * eddsa_verify - verifies an ed25519 signature of given data.
+ * (obsolete interface!)
+ *
+ */
+bool
+eddsa_verify(const uint8_t sig[ED25519_SIG_LEN],
+	     const uint8_t pub[ED25519_KEY_LEN],
+	     const uint8_t *data, size_t len)
+{
+	return ed25519_verify(sig, pub, data, len);
+}
+
+/*
+ * eddsa_pk_eddsa_to_dh - convert a ed25519 public key to x25519.
+ * (obsolete interface!)
+ */
+void
+eddsa_pk_eddsa_to_dh(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
+{
+	pk_ed25519_to_x25519(out, in);
+}
+
+
+/*
+ * eddsa_sk_eddsa_to_dh - convert a ed25519 secret key to x25519 secret.
+ * (obsolete interface!)
+ */
+void
+eddsa_sk_eddsa_to_dh(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
+{
+	conv_sk_ed25519_to_x25519(out, in);
 	burnstack(65536);
 }

@@ -17,6 +17,9 @@
 #include "fld.h"
 #include "burnstack.h"
 
+#include "ed.h"
+
+
 /*
  * structure for a point of the elliptic curve in montgomery form
  * without it's y-coordinate.
@@ -99,7 +102,7 @@ montgomery(struct mg *A, struct mg *B, const struct mg *C)
  *   P->z must be 1
  */
 static void
-mg_scale(struct mg *out, const struct mg *P, const uint8_t x[32])
+mg_scale(struct mg *out, const struct mg *P, const uint8_t x[X25519_KEY_LEN])
 {
 	struct mg T;
 	int8_t foo;
@@ -109,7 +112,7 @@ mg_scale(struct mg *out, const struct mg *P, const uint8_t x[32])
 	fld_set0(out->z, 0);
 	memcpy(&T, P, sizeof(struct mg));
 	
-	for (i = 31; i >= 0; i--) {
+	for (i = X25519_KEY_LEN-1; i >= 0; i--) {
 		foo = x[i];
 		for (j = 8; j > 0; j--, foo <<= 1) {
 			ctmemswap(out, &T, sizeof(struct mg), foo >> 7);
@@ -119,21 +122,24 @@ mg_scale(struct mg *out, const struct mg *P, const uint8_t x[32])
 	}
 }
 
+
 /*
- * mg_dh - calculates diffie-hellman function
+ * do_x25519 - calculates x25519 diffie-hellman using montgomery form
  */
 static void
-mg_dh(uint8_t out[32], const uint8_t sec[32], const uint8_t base[32])
+do_x25519(uint8_t out[X25519_KEY_LEN],
+	     const uint8_t scalar[X25519_KEY_LEN],
+	     const uint8_t point[X25519_KEY_LEN])
 {
 	struct mg res, P;
-	uint8_t s[32];
+	uint8_t s[X25519_KEY_LEN];
 
-	memcpy(s, sec, 32);
+	memcpy(s, scalar, X25519_KEY_LEN);
 	s[0] &= 0xf8;
 	s[31] &= 0x7f;
 	s[31] |= 0x40;
  	
-	fld_import(P.x, base);
+	fld_import(P.x, point);
 	fld_set0(P.z, 1);
 	
 	mg_scale(&res, &P, s);
@@ -145,11 +151,93 @@ mg_dh(uint8_t out[32], const uint8_t sec[32], const uint8_t base[32])
 
 
 /*
- * DH - stack-cleanup wrapper for mg_dh
+ * do_x25519_base - calculate a x25519 diffie-hellman public value
+ *
+ */
+
+static void
+do_x25519_base(uint8_t out[X25519_KEY_LEN],
+	       const uint8_t scalar[X25519_KEY_LEN])
+{
+	uint8_t tmp[X25519_KEY_LEN];
+
+	sc_t x;
+	struct ed R;
+	fld_t u, t;
+
+	/*
+	 * clear bits on input and import it as x
+	 */
+	memcpy(tmp, scalar, X25519_KEY_LEN);
+	tmp[0] &= 0xf8;
+	tmp[31] &= 0x7f;
+	tmp[31] |= 0x40;
+
+	sc_import(x, tmp, sizeof(tmp));
+
+
+	/*
+	 * scale our base point on edwards curve
+	 */
+	ed_scale_base(&R, x);
+
+
+	/*
+	 * extract montgomery coordinate u from edwards point R
+	 */
+
+	/* u <- (z + y) / (z - y) */
+	fld_sub(t, R.z, R.y);
+	fld_inv(t, t);
+	fld_add(u, R.z, R.y);
+	fld_mul(u, u, t);
+
+
+	fld_export(out, u);
+}
+
+
+/*
+ * x25519_base - wrapper around do_x25519_base with stack cleaning
  */
 void
-DH(uint8_t out[32], const uint8_t sec[32], const uint8_t base[32])
+x25519_base(uint8_t out[X25519_KEY_LEN],
+	    const uint8_t scalar[X25519_KEY_LEN])
 {
-	mg_dh(out, sec, base);
+	do_x25519_base(out, scalar);
+	burnstack(65536);
+}
+
+
+
+
+/* x25519 - wrapper for do_x25519 with stack-cleanup */
+void
+x25519(uint8_t out[X25519_KEY_LEN],
+       const uint8_t scalar[X25519_KEY_LEN],
+       const uint8_t point[X25519_KEY_LEN])
+{
+	do_x25519(out, scalar, point);
+	burnstack(65536);
+}
+
+
+
+
+
+/*
+ * Obsolete Interface, this will be removed in the future.
+ */
+
+
+/*
+ * DH - stack-cleanup wrapper for do_x25519 (obsolete interface)
+ */
+void
+DH(uint8_t out[X25519_KEY_LEN],
+   const uint8_t sec[X25519_KEY_LEN],
+   const uint8_t point[X25519_KEY_LEN])
+{
+	do_x25519(out, sec, point);
 	burnstack(65536);
 }

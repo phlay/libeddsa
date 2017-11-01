@@ -1,5 +1,5 @@
-#ifndef LR_H
-#define LR_H
+#ifndef SC_H
+#define SC_H
 
 #include <stddef.h>
 #include <stdint.h>

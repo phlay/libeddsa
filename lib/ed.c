@@ -91,6 +91,7 @@ memselect(void *out, const void *pa, const void *pb, size_t max, int flag)
 		*p++ = (mA & *a++) ^ (mB & *b++);
 }
 
+
 /*
  * ed_import - import a point P on the curve from packet 256bit encoding.
  *
@@ -145,6 +146,7 @@ ed_import(struct ed *P, const uint8_t in[32])
 	fld_mul(P->t, P->x, P->y);
 	fld_set0(P->z, 1);
 }
+
 
 /*
  * ed_export - export point P to packed 256bit format.
@@ -433,7 +435,7 @@ ed_scale_base(struct ed *out, const sc_t x)
 
 
 /*
- * helper function to speed up ed_scale and ed_double_scale
+ * helper function to speed up ed_double_scale
  */
 static void
 ed_precompute(struct pced *R, const struct ed *P)
@@ -444,56 +446,12 @@ ed_precompute(struct pced *R, const struct ed *P)
 }
 
 
-/*
- * ed_scale - calculates x * P.
- *
- * assumes:
- *   x must be reduced
- *   P must be affine, ie P.z must be 1
- */
-void
-ed_scale(struct ed *res, const sc_t x, const struct ed *P)
-{
-	struct pced pcP, sel;
-
-	limb_t foo;
-	int i, j;
-
-	ed_precompute(&pcP, P);
-
-        /* init result: res <- [0, 1, 0, 1] */
-        memset(res, 0, sizeof(struct ed));
-        res->y[0] = 1;
-        res->z[0] = 1;
-
-	/* since x is reduced, we ignore leading bits of
-	 * most-significant limb
-	 */
-	foo = x[SC_LIMB_NUM-1] << 7;
-	for (j = SC_LIMB_BITS-7; j > 0; j--, foo <<= 1) {
-		memselect(&sel, &pcP, &ed_zero_pc, sizeof(struct pced),
-			  foo >> (SC_LIMB_BITS-1));
-		ed_double(res, res);
-		ed_add_pc(res, res, &sel);
-	}
-	/* loop over remaining limbs */
-	for (i = SC_LIMB_NUM-2; i >= 0; i--) {
-		foo = x[i];
-                for (j = SC_LIMB_BITS; j > 0; j--, foo <<= 1) {
-			memselect(&sel, &pcP, &ed_zero_pc, sizeof(struct pced),
-				  foo >> (SC_LIMB_BITS-1));
-			ed_double(res, res);
-			ed_add_pc(res, res, &sel);
-		}
-	}
-}
-
 
 /*
  * ed_double_scale - calculates x*P + y*Q.  (vartime)
  *
- * WARNING: this algorithms does NOT run in constant time! use only
- * for public information like in eddsa_verify.
+ * Note: This algorithms does NOT run in constant time! Please use this
+ * only for public information like in ed25519_verify().
  *
  * assumes:
  *   P and Q are affine, ie have z = 1
