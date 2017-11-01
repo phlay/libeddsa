@@ -29,14 +29,15 @@
 
 
 static void
-ed25519_key_setup(uint8_t out[64], const uint8_t sk[ED25519_KEY_LEN])
+ed25519_key_setup(uint8_t out[SHA512_HASH_LENGTH],
+		  const uint8_t sk[ED25519_KEY_LEN])
 {
-	sha512ctx hash;
+	struct sha512 hash;
 
 	/* hash secret-key */
 	sha512_init(&hash);
 	sha512_add(&hash, sk, ED25519_KEY_LEN);
-	sha512_done(&hash, out);
+	sha512_final(&hash, out);
 
 	/* delete bit 255 and set bit 254 */
 	out[31] &= 0x7f;
@@ -52,7 +53,7 @@ ed25519_key_setup(uint8_t out[64], const uint8_t sk[ED25519_KEY_LEN])
 static void
 genpub(uint8_t pub[ED25519_KEY_LEN], const uint8_t sec[ED25519_KEY_LEN])
 {
-	uint8_t h[64];
+	uint8_t h[SHA512_HASH_LENGTH];
 	struct ed A;
 	sc_t a;
 
@@ -86,8 +87,8 @@ sign(uint8_t sig[ED25519_SIG_LEN],
      const uint8_t pub[ED25519_KEY_LEN],
      const uint8_t *data, size_t len)
 {
-	sha512ctx hash;
-	uint8_t h[64];
+	struct sha512 hash;
+	uint8_t h[SHA512_HASH_LENGTH];
 	
 	sc_t a, r, t, S;
 	struct ed R;
@@ -100,8 +101,8 @@ sign(uint8_t sig[ED25519_SIG_LEN],
 	sha512_init(&hash);
 	sha512_add(&hash, h+32, 32);
 	sha512_add(&hash, data, len);
-	sha512_done(&hash, h);
-	sc_import(r, h, 64);
+	sha512_final(&hash, h);
+	sc_import(r, h, sizeof(h));
 
 	/* calculate R = r * B which form the first 256bit of the signature */
 	ed_scale_base(&R, r);
@@ -112,8 +113,8 @@ sign(uint8_t sig[ED25519_SIG_LEN],
 	sha512_add(&hash, sig, 32);
 	sha512_add(&hash, pub, 32);
 	sha512_add(&hash, data, len);
-	sha512_done(&hash, h);
-	sc_import(t, h, 64);
+	sha512_final(&hash, h);
+	sc_import(t, h, sizeof(h));
 	
 	/* calculate S := r + t*a mod m and finish the signature */
 	sc_mul(S, t, a);
@@ -149,8 +150,8 @@ ed25519_verify(const uint8_t sig[ED25519_SIG_LEN],
 	       const uint8_t pub[ED25519_KEY_LEN],
 	       const uint8_t *data, size_t len)
 {
-	sha512ctx hash;
-	uint8_t h[64];
+	struct sha512 hash;
+	uint8_t h[SHA512_HASH_LENGTH];
 	struct ed A, C;
 	sc_t t, S;
 	uint8_t check[32];
@@ -166,7 +167,7 @@ ed25519_verify(const uint8_t sig[ED25519_SIG_LEN],
 	sha512_add(&hash, sig, 32);
 	sha512_add(&hash, pub, 32);
 	sha512_add(&hash, data, len);
-	sha512_done(&hash, h);
+	sha512_final(&hash, h);
 	sc_import(t, h, 64);
 
 	/* verify signature (vartime!) */
@@ -238,7 +239,7 @@ pk_ed25519_to_x25519(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_L
 static void
 conv_sk_ed25519_to_x25519(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
 {
-	uint8_t h[64];
+	uint8_t h[SHA512_HASH_LENGTH];
 	ed25519_key_setup(h, in);
 	memcpy(out, h, X25519_KEY_LEN);
 }

@@ -8,17 +8,21 @@
 extern "C" {
 #endif
 
-typedef struct {
+#define SHA512_BLOCK_SIZE	128
+#define SHA512_HASH_LENGTH	64
+
+
+struct sha512 {
 	uint64_t	state[8];
 	uint64_t	count;
 
-	uint8_t		buffer[128];
+	uint8_t		buffer[SHA512_BLOCK_SIZE];
 	size_t		fill;
-} sha512ctx;
+};
 
-void sha512_init(sha512ctx *ctx);
-void sha512_add(sha512ctx *ctx, const uint8_t *data, size_t len);
-void sha512_done(sha512ctx *ctx, uint8_t out[64]);
+void sha512_init(struct sha512 *ctx);
+void sha512_add(struct sha512 *ctx, const uint8_t *data, size_t len);
+void sha512_final(struct sha512 *ctx, uint8_t out[SHA512_HASH_LENGTH]);
 
 #ifdef __cplusplus
 }

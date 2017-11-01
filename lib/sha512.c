@@ -81,7 +81,7 @@ load_be64(const uint8_t *p)
 
 
 static void
-compress(uint64_t state[8], const uint8_t buf[128])
+compress(uint64_t state[8], const uint8_t buf[SHA512_BLOCK_SIZE])
 {
 	uint64_t W[80], t;
 	uint64_t a, b, c, d, e, f, g, h;
@@ -125,7 +125,7 @@ compress(uint64_t state[8], const uint8_t buf[128])
 
 
 void
-sha512_init(sha512ctx *ctx)
+sha512_init(struct sha512 *ctx)
 {
 	ctx->fill = 0;
 	ctx->count = 0;
@@ -141,15 +141,15 @@ sha512_init(sha512ctx *ctx)
 }
 
 void
-sha512_add(sha512ctx *ctx, const uint8_t *data, size_t len)
+sha512_add(struct sha512 *ctx, const uint8_t *data, size_t len)
 {
 	if (ctx->fill > 0) {
 		/* fill internal buffer up and compress */
-		while (ctx->fill < 128 && len > 0) {
+		while (ctx->fill < SHA512_BLOCK_SIZE && len > 0) {
 			ctx->buffer[ctx->fill++] = *data++;
 			len--;
 		}
-		if (ctx->fill < 128)
+		if (ctx->fill < SHA512_BLOCK_SIZE)
 			return;
 
 		compress(ctx->state, ctx->buffer);
@@ -158,12 +158,12 @@ sha512_add(sha512ctx *ctx, const uint8_t *data, size_t len)
 
 	/* ctx->fill is now zero */
 
-	while (len >= 128) {
+	while (len >= SHA512_BLOCK_SIZE) {
 		compress(ctx->state, data);
 		ctx->count++;
 		
-		data += 128;
-		len -= 128;
+		data += SHA512_BLOCK_SIZE;
+		len -= SHA512_BLOCK_SIZE;
 	}
 
 	/* save rest for next time */
@@ -173,7 +173,7 @@ sha512_add(sha512ctx *ctx, const uint8_t *data, size_t len)
 
 
 void
-sha512_done(sha512ctx *ctx, uint8_t out[64])
+sha512_final(struct sha512 *ctx, uint8_t out[SHA512_HASH_LENGTH])
 {
 	size_t rest;
 	int i;
@@ -183,22 +183,24 @@ sha512_done(sha512ctx *ctx, uint8_t out[64])
 	/* append 1-bit to signal end of data */
 	ctx->buffer[ctx->fill++] = 0x80;
 	
-	if (ctx->fill > 112) {
-		while (ctx->fill < 128)
+	if (ctx->fill > SHA512_BLOCK_SIZE - 16) {
+		while (ctx->fill < SHA512_BLOCK_SIZE)
 			ctx->buffer[ctx->fill++] = 0;
 
 		compress(ctx->state, ctx->buffer);
 		ctx->fill = 0;
 	}
-	while (ctx->fill < 112)
+	while (ctx->fill < SHA512_BLOCK_SIZE - 16)
 		ctx->buffer[ctx->fill++] = 0;
 
 	/* because rest < 128 our message length is
 	 * L := 128*ctx->count + rest == (ctx->count<<7)|rest,
 	 * now convert L to number of bits and write out as 128bit big-endian.
 	 */
-	store_be64(ctx->buffer+112, ctx->count >> 54);
-	store_be64(ctx->buffer+120, ((ctx->count << 7) | rest) << 3);
+	store_be64(ctx->buffer+SHA512_BLOCK_SIZE-16,
+			ctx->count >> 54);
+	store_be64(ctx->buffer+SHA512_BLOCK_SIZE-8,
+			((ctx->count << 7) | rest) << 3);
 	
 	compress(ctx->state, ctx->buffer);
 
