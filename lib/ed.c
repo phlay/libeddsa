@@ -468,8 +468,12 @@ ed_dual_scale(struct ed *R,
 	int ux[SC_BITS+1], uy[SC_BITS+1];
 	int n, i;
 
+	memcpy(R, &ed_zero, sizeof(struct ed));
+
 	/* calculate joint sparse form of x and y */
 	n = sc_jsf(ux, uy, x, y);
+	if (n == -1)
+		return;
 
 	/* precompute Q, Q+B and Q-B */
 	ed_add_pc(&QpB, Q, &pced_B);
@@ -477,9 +481,7 @@ ed_dual_scale(struct ed *R,
 	ed_precompute(&pcQ, Q);
 	
 	/* now we calculate R = x * base_point + y * Q using fast shamir method */
-	memcpy(R, &ed_zero, sizeof(struct ed));
-	for (i = n; i >= 0; i--) {
-		ed_double(R, R);
+	for (i = n; ; i--) {
 		if (ux[i] == 1) {
 			if (uy[i] == 1)
 				ed_add(R, R, &QpB);
@@ -502,5 +504,9 @@ ed_dual_scale(struct ed *R,
 			else if (uy[i] == -1)
 				ed_sub_pc(R, R, &pcQ);
 		}
+
+		if (i == 0) break;
+
+		ed_double(R, R);
 	}
 }
