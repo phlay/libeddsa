@@ -288,10 +288,13 @@ jsfdigit(unsigned int a, unsigned int b)
  *  a and b carried and reduced
  *
  * NOTE: this function runs in variable time and due to the nature of
- * the optimization JSF is needed for (see ed_double_scale), there is
+ * the optimization JSF is needed for (see ed_dual_scale), there is
  * no point in creating a constant-time version.
+ *
+ * returns the highest index k >= 0 with max(u0[k], u1[k]) != 0
+ * or -1 in case u0 and u1 are all zero.
  */
-void
+int
 sc_jsf(int u0[SC_BITS+1], int u1[SC_BITS+1], const sc_t a, const sc_t b)
 {
 	limb_t n0, n1;
@@ -313,4 +316,9 @@ sc_jsf(int u0[SC_BITS+1], int u1[SC_BITS+1], const sc_t a, const sc_t b)
 	}
 	u0[k] = jsfdigit(n0, n1);
 	u1[k] = jsfdigit(n1, n0);
+
+	while (k >= 0 && u0[k] == 0 && u1[k] == 0)
+		k--;
+
+	return k;
 }

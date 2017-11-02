@@ -37,39 +37,40 @@ struct pced {
 
 #ifdef USE_64BIT
 
+/* lookup-table for ed_scale_base - 64bit version */
 static const struct pced ed_lookup[][8] = {
-#include "ed_lookup64.h"
+  #include "ed_lookup64.h"
 };
 
-const struct ed ed_BP = {
-	{1738742601995546, 1146398526822698, 2070867633025821,
-	 562264141797630, 587772402128613},
-	{1801439850948184, 1351079888211148, 450359962737049,
-	 900719925474099, 1801439850948198},
-	{1841354044333475, 16398895984059, 755974180946558,
-	 900171276175154, 1821297809914039},
-	{1} };
-	
+/* base point B of our group in pre-computed form */
+const struct pced pced_B = {
+	{62697248952638, 204681361388450, 631292143396476,
+	 338455783676468, 1213667448819585},
+	{1288382639258501, 245678601348599, 269427782077623,
+	 1462984067271730, 137412439391563},
+	{301289933810280, 1259582250014073, 1422107436869536,
+	 796239922652654, 1953934009299142} };
 
 #else
 
+/* lookup-table for ed_scale_base - 32bit version */
 static const struct pced ed_lookup[][8] = {
   #include "ed_lookup32.h"
 };
 
-const struct ed ed_BP = {
-	{52811034, 25909283, 16144682, 17082669, 27570973,
-	 30858332, 40966398, 8378388, 20764389, 8758491},
-	{40265304, 26843545, 13421772, 20132659, 26843545,
-	 6710886, 53687091, 13421772, 40265318, 26843545},
-	{28827043, 27438313, 39759291, 244362, 8635006,
-	 11264893, 19351346, 13413597, 16611511, 27139452},
-	{1} };
+/* base point B of our group in pre-computed form */
+const struct pced pced_B = {
+	{54563134, 934261, 64385954, 3049989, 66381436,
+	 9406985, 12720692, 5043384, 19500929, 18085054},
+	{25967493, 19198397, 29566455, 3660896, 54414519,
+	 4014786, 27544626, 21800161, 61029707, 2047604},
+	{58370664, 4489569, 9688441, 18769238, 10184608,
+	 21191052, 29287918, 11864899, 42594502, 29115885} };
 
 #endif
 
 const struct ed ed_zero = { { 0 }, { 1 }, { 0 }, { 1 } };
-const struct pced ed_zero_pc = { { 1 }, { 1 }, { 0 } };
+const struct pced pced_zero = { { 1 }, { 1 }, { 0 } };
 
 
 /*
@@ -169,7 +170,7 @@ ed_export(uint8_t out[32], const struct ed *P)
 
 
 /*
- * ec_add - add points P and Q
+ * ed_add - add points P and Q
  */
 static void
 ed_add(struct ed *out, const struct ed *P, const struct ed *Q)
@@ -203,7 +204,7 @@ ed_add(struct ed *out, const struct ed *P, const struct ed *Q)
 
 
 /*
- * ec_double - special case of ec_add for P=Q.
+ * ed_double - special case of ed_add for P=Q.
  *
  * little bit faster, since 4 multiplications are turned into squares.
  */
@@ -335,7 +336,7 @@ ed_sub_pc(struct ed *out, const struct ed *P, const struct pced *Q)
 
 
 /*
- * scale16 - helper function for ed_scale_base, returns x * 16^pow * ed_BP.
+ * scale16 - helper function for ed_scale_base, returns x * 16^pow * base
  *
  * assumes:
  *  -8 <= x <= 7
@@ -360,9 +361,9 @@ scale16(struct pced *out, int pow, int x)
 	mask |= mask >> 1;
 	mask = (mask & 1) - 1;
 	for (i = 0; i < FLD_LIMB_NUM; i++) {
-		R.diff[i] ^= ed_zero_pc.diff[i] & mask;
-		R.sum[i] ^= ed_zero_pc.sum[i] & mask;
-		R.prod[i] ^= ed_zero_pc.prod[i] & mask;
+		R.diff[i] ^= pced_zero.diff[i] & mask;
+		R.sum[i] ^= pced_zero.sum[i] & mask;
+		R.prod[i] ^= pced_zero.prod[i] & mask;
 	}
 
 
@@ -391,7 +392,7 @@ scale16(struct pced *out, int pow, int x)
 
 
 /*
- * ed_scale_base - calculates x * ed_BP
+ * ed_scale_base - calculates x * base
  */
 void
 ed_scale_base(struct ed *out, const sc_t x)
@@ -446,62 +447,60 @@ ed_precompute(struct pced *R, const struct ed *P)
 }
 
 
-
 /*
- * ed_double_scale - calculates x*P + y*Q.  (vartime)
+ * ed_dual_scale - calculates R = x*base + y*Q.  (vartime)
  *
  * Note: This algorithms does NOT run in constant time! Please use this
  * only for public information like in ed25519_verify().
  *
  * assumes:
- *   P and Q are affine, ie have z = 1
+ *   Q is affine, ie has z = 1
  *   x and y must be reduced
  */
 void
-ed_double_scale(struct ed *res,
-		 const sc_t x, const struct ed *P,
-		 const sc_t y, const struct ed *Q)
+ed_dual_scale(struct ed *R,
+	      const sc_t x,
+	      const sc_t y, const struct ed *Q)
 {
-	struct ed PQ, PmQ;
-	struct pced pcP, pcQ;
+	struct ed QpB, QmB;
+	struct pced pcQ;
+
 	int ux[SC_BITS+1], uy[SC_BITS+1];
 	int n, i;
 
 	/* calculate joint sparse form of x and y */
-	sc_jsf(ux, uy, x, y);
-	for (n = SC_BITS; n >= 0 && ux[n] == 0 && uy[n] == 0; n--);
+	n = sc_jsf(ux, uy, x, y);
 
-	/* precompute P, Q, P+Q and P-Q */
-	ed_precompute(&pcP, P);
+	/* precompute Q, Q+B and Q-B */
+	ed_add_pc(&QpB, Q, &pced_B);
+	ed_sub_pc(&QmB, Q, &pced_B);
 	ed_precompute(&pcQ, Q);
-	ed_add(&PQ, P, Q);
-	ed_sub(&PmQ, P, Q);
 	
-	/* now we use the fast-shamir method with jsf coefficients */
-	memcpy(res, &ed_zero, sizeof(struct ed));
+	/* now we calculate R = x * base_point + y * Q using fast shamir method */
+	memcpy(R, &ed_zero, sizeof(struct ed));
 	for (i = n; i >= 0; i--) {
-		ed_double(res, res);
+		ed_double(R, R);
 		if (ux[i] == 1) {
 			if (uy[i] == 1)
-				ed_add(res, res, &PQ);
+				ed_add(R, R, &QpB);
 			else if (uy[i] == -1)
-				ed_add(res, res, &PmQ);
+				ed_sub(R, R, &QmB);
 			else
-				ed_add_pc(res, res, &pcP);
+				ed_add_pc(R, R, &pced_B);
 			
 		} else if (ux[i] == -1) {
 			if (uy[i] == 1)
-				ed_sub(res, res, &PmQ);
+				ed_add(R, R, &QmB);
 			else if (uy[i] == -1)
-				ed_sub(res, res, &PQ);
+				ed_sub(R, R, &QpB);
 			else
-				ed_sub_pc(res, res, &pcP);
+				ed_sub_pc(R, R, &pced_B);
 
-		} else if (ux[i] == 0) {
+		} else {
 			if (uy[i] == 1)
-				ed_add_pc(res, res, &pcQ);
+				ed_add_pc(R, R, &pcQ);
 			else if (uy[i] == -1)
-				ed_sub_pc(res, res, &pcQ);
+				ed_sub_pc(R, R, &pcQ);
 		}
 	}
 }

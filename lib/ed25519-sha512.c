@@ -173,7 +173,7 @@ ed25519_verify(const uint8_t sig[ED25519_SIG_LEN],
 	/* verify signature (vartime!) */
 	fld_neg(A.x, A.x);
 	fld_neg(A.t, A.t);
-	ed_double_scale(&C, S, &ed_BP, t, &A);
+	ed_dual_scale(&C, S, t, &A);
 	ed_export(check, &C);
 	
 	/* is export(C) == export(R) (vartime!) */
