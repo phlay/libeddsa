@@ -205,7 +205,7 @@ x25519_base(uint8_t out[X25519_KEY_LEN],
 	    const uint8_t scalar[X25519_KEY_LEN])
 {
 	do_x25519_base(out, scalar);
-	burnstack(65536);
+	burnstack(2048);
 }
 
 
@@ -218,7 +218,7 @@ x25519(uint8_t out[X25519_KEY_LEN],
        const uint8_t point[X25519_KEY_LEN])
 {
 	do_x25519(out, scalar, point);
-	burnstack(65536);
+	burnstack(2048);
 }
 
 
@@ -239,5 +239,5 @@ DH(uint8_t out[X25519_KEY_LEN],
    const uint8_t point[X25519_KEY_LEN])
 {
 	do_x25519(out, sec, point);
-	burnstack(65536);
+	burnstack(2048);
 }

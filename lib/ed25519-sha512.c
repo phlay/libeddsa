@@ -74,7 +74,7 @@ void
 ed25519_genpub(uint8_t pub[ED25519_KEY_LEN], const uint8_t sec[ED25519_KEY_LEN])
 {
 	genpub(pub, sec);
-	burnstack(65536);
+	burnstack(2048);
 }
 
 
@@ -133,7 +133,7 @@ ed25519_sign(uint8_t sig[ED25519_SIG_LEN],
 	   const uint8_t *data, size_t len)
 {
 	sign(sig, sec, pub, data, len);
-	burnstack(65536);
+	burnstack(4096);
 }
 
 
@@ -252,7 +252,7 @@ void
 sk_ed25519_to_x25519(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
 {
 	conv_sk_ed25519_to_x25519(out, in);
-	burnstack(65536);
+	burnstack(1024);
 }
 
 
@@ -271,7 +271,7 @@ void
 eddsa_genpub(uint8_t pub[32], const uint8_t sec[32])
 {
 	genpub(pub, sec);
-	burnstack(65536);
+	burnstack(2048);
 }
 
 
@@ -285,7 +285,7 @@ eddsa_sign(uint8_t sig[ED25519_SIG_LEN],
 	   const uint8_t *data, size_t len)
 {
 	sign(sig, sec, pub, data, len);
-	burnstack(65536);
+	burnstack(4096);
 }
 
 /*
@@ -320,5 +320,5 @@ void
 eddsa_sk_eddsa_to_dh(uint8_t out[X25519_KEY_LEN], const uint8_t in[ED25519_KEY_LEN])
 {
 	conv_sk_ed25519_to_x25519(out, in);
-	burnstack(65536);
+	burnstack(1024);
 }
