@@ -401,31 +401,26 @@ ed_scale_base(struct ed *out, const sc_t x)
 	struct pced P;
 	sc_t tmp;
 	uint8_t pack[32];
-	int r[64];
 	int i;
-	
+
 	/* s <- x + 8 * (16^64 - 1) / 15 */
 	sc_add(tmp, x, con_off);
 	sc_export(pack, tmp);
-	for (i = 0; i < 32; i++) {
-		r[2*i] = (pack[i] & 0x0f) - 8;
-		r[2*i+1] = (pack[i] >> 4) - 8;
-	}
-	
+
 	/*
 	 * R0 <- r0*B + r2*16^2*B + ... + r62*16^62*B 
 	 * R1 <- r1*B + r3*16^2*B + ... + r63*16^62*B
 	 */
 	memcpy(&R0, &ed_zero, sizeof(struct ed));
 	memcpy(&R1, &ed_zero, sizeof(struct ed));
-	for (i = 0; i < 63; i += 2) {
-		scale16(&P, i, r[i]);
+	for (i = 0; i < 32; i++) {
+		scale16(&P, 2*i, (pack[i] & 0xf) - 8);
 		ed_add_pc(&R0, &R0, &P);
 
-		scale16(&P, i, r[i+1]);
+		scale16(&P, 2*i, (pack[i] >> 4) - 8);
 		ed_add_pc(&R1, &R1, &P);
 	}
-	
+
 	/* R1 <- 16 * R1 */
 	for (i = 0; i < 4; i++)
 		ed_add(&R1, &R1, &R1);

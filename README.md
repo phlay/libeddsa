@@ -13,5 +13,5 @@ If you need just ed25519-signatures or x25519-key-exchange with a simple API, ho
 - cmake build system
 - protection against timing attacks as far as possible in C
 - static and dynamic link support
-- easy to use (see below)
+- easy to use (see wiki)
 - public domain license

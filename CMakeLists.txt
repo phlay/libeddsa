@@ -1,12 +1,12 @@
 include(CheckCCompilerFlag)
 include(CheckPrototypeDefinition)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0.0)
 
 project(eddsa C)
 
 set(EDDSA_VERSION_MAJOR 0)
-set(EDDSA_VERSION_MINOR 6)
+set(EDDSA_VERSION_MINOR 7)
 
 
 option(USE_STACKCLEAN "clean all secret variables from stack" ON)
