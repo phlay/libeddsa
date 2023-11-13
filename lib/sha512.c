@@ -13,7 +13,7 @@
 
 #include "sha512.h"
 
-static const uint64_t K[80] = {
+static const uint64_t round_key[80] = {
 	0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL,
 	0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
 	0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL, 0xd807aa98a3030242ULL,
@@ -51,9 +51,9 @@ static const uint64_t K[80] = {
 #define G1(x)		(ROR(x, 19) ^ ROR(x, 61) ^ (x >> 6))
 
 
-#define ROUND(i, a,b,c,d,e,f,g,h)			\
-     t = h + S1(e) + (g ^ (e & (f ^ g))) + K[i] + W[i];	\
-     d += t;						\
+#define ROUND(i, a,b,c,d,e,f,g,h)				\
+     t = h + S1(e) + (g ^ (e & (f ^ g))) + round_key[i] + W[i];	\
+     d += t;							\
      h  = t + S0(a) + ( ((a | b) & c) | (a & b) )
 
 
